@@ -501,18 +501,23 @@
 
 <script>
   // ── CONFIG — update after forking ────────────────────────────────────────────
-  const REPO_OWNER = 'YOUR_GITHUB_USERNAME';
+  const REPO_OWNER = 'chems-eddine-hadiby';
   const REPO_NAME  = 'anef-tracker';
   
   // Create a Google Apps Script as a bridge to hide your GitHub Token.
   // Deploy it as a Web App (Access: Anyone) and paste the URL here.
-  const GAS_BRIDGE_URL = 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+  const GAS_BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbzMbTpjAyvlDommm5HQ94iH1Hc58PbzjEIRXFEoctCL3yZUPGHZQH8rTKHd-DmybzML/exec';
 
-  // Generate with: python generate_key.py --rsa
-  // Private key → GitHub Secret RSA_PRIVATE_KEY (never committed)
+ 
   const RSA_PUBLIC_KEY_PEM = `
 -----BEGIN PUBLIC KEY-----
-PASTE_YOUR_RSA_PUBLIC_KEY_HERE
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnCGjPwktBpsWNe4f25Lb
+tblUeCmZ9FLqhxfNVkdSIER2Qh8K+IAzbFw4XhE/BMYyxgnBNPfD6C6avBQbP6D3
+kuIS8mB/e1rzvNCgyfTWAXO87BO0kusaKOXCdLSNO/Z6uIPYCPTq4f5Qbdn2hWb8
+JVdUQRvY4VDvIp7uoZ2kLuH4qUhB3kE/+Y1tMtUKdN05ueJoN/hf8jatCKQ09BLu
+8B3rYQiBUVs+4ziHjNORfaBqzvb59upTZDHcG9YtWltWhLAiT5a3Xadcc4oPlh6u
+WWIdPQo1w48ChrEb/b1dILFUQyxEXm1Qswj9Ze7+V4BJfvRIqS033vVYhHXxbG1i
+bQIDAQAB
 -----END PUBLIC KEY-----
 `.trim();
 
