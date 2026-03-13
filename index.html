@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ANEF Tracker — Suivi de dossier automatique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #0a0d14;
+      --surface:  #111622;
+      --surface2: #161d2e;
+      --border:   #1e2a42;
+      --accent:   #3b82f6;
+      --accent2:  #60a5fa;
+      --success:  #10b981;
+      --danger:   #ef4444;
+      --warn:     #f59e0b;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --mono:     'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow {
+      position: fixed;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 70%);
+      top: -250px; left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* ── Header ── */
+    header { padding: 56px 0 52px; text-align: center; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.25);
+      border-radius: 100px;
+      padding: 6px 18px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 32px;
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(38px, 6vw, 62px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin-bottom: 22px;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 17px;
+      color: var(--muted);
+      line-height: 1.75;
+      max-width: 480px;
+      margin: 0 auto;
+      font-weight: 300;
+    }
+
+    /* ── Steps ── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 0 0 36px;
+    }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 16px;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+
+    .step:hover { border-color: rgba(59,130,246,0.3); }
+
+    .step-num {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .step-icon { font-size: 22px; margin-bottom: 10px; }
+    .step p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .step p strong { color: #94a3b8; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-radius: 9px;
+      padding: 12px 20px;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover { color: var(--text); background: var(--surface2); }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 14px rgba(59,130,246,0.35);
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+
+    .card.update-card::before {
+      background: linear-gradient(90deg, transparent, var(--warn), transparent);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .card-desc { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+
+    /* ── Form ── */
+    .form-grid { display: grid; gap: 20px; }
+
+    .field { display: flex; flex-direction: column; gap: 7px; }
+
+    label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #94a3b8;
+      letter-spacing: 0.02em;
+    }
+
+    label .req { color: var(--accent); margin-left: 2px; }
+
+    input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input::placeholder { color: #2d3d56; font-family: var(--mono); font-size: 13px; }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+    input[type="password"] { font-family: var(--mono); letter-spacing: 0.15em; }
+
+    .hint { font-size: 12px; color: var(--muted); }
+
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--muted); font-size: 11px;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      font-family: var(--mono);
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── Security note ── */
+    .sec-note {
+      background: rgba(59,130,246,0.06);
+      border: 1px solid rgba(59,130,246,0.15);
+      border-radius: 10px;
+      padding: 15px 16px;
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+
+    .sec-note.amber {
+      background: rgba(245,158,11,0.06);
+      border-color: rgba(245,158,11,0.2);
+    }
+
+    .sec-note .ico { font-size: 17px; flex-shrink: 0; margin-top: 2px; }
+    .sec-note p { font-size: 13px; color: #94a3b8; line-height: 1.65; }
+    .sec-note strong { color: var(--accent2); }
+    .sec-note.amber strong { color: #fcd34d; }
+
+    /* ── Strength bar ── */
+    .strength-bar { height: 3px; border-radius: 2px; background: var(--border); overflow: hidden; margin-top: 5px; }
+    .strength-fill { height: 100%; border-radius: 2px; transition: width 0.3s, background 0.3s; width: 0%; }
+    .strength-label { font-size: 11px; font-family: var(--mono); color: var(--muted); margin-top: 4px; }
+
+    /* ── Button ── */
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 15px 32px;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      letter-spacing: 0.02em;
+      transition: all 0.2s;
+    }
+
+    .btn:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(59,130,246,0.3); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn.amber { background: #d97706; }
+    .btn.amber:hover { background: #b45309; box-shadow: 0 8px 24px rgba(245,158,11,0.3); }
+
+    /* ── Status ── */
+    .status {
+      display: none;
+      border-radius: 10px;
+      padding: 15px 18px;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .status.success { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); color: #6ee7b7; }
+    .status.error   { background: rgba(239,68,68,0.08);  border: 1px solid rgba(239,68,68,0.2);  color: #fca5a5; }
+    .status.info    { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); color: #93c5fd; }
+
+    /* ── Disclaimer ── */
+    .disclaimer {
+      background: rgba(239,68,68,0.04);
+      border: 1px solid rgba(239,68,68,0.1);
+      border-radius: 10px;
+      padding: 13px 15px;
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.65;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      margin-top: 52px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.9;
+    }
+
+    footer a { color: var(--accent2); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Spinner ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 15px; height: 15px;
+      border: 2px solid rgba(255,255,255,0.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @media (max-width: 580px) {
+      .steps { grid-template-columns: 1fr; }
+      .card  { padding: 24px 18px; }
+      .tabs  { flex-direction: column; }
+      h1     { font-size: 36px; }
+    }
+  </style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="container">
+
+  <header>
+    <div class="badge">
+      <div class="badge-dot"></div>
+      Surveillance automatique &bull; Gratuit
+    </div>
+    <h1>Suivi ANEF<br><span>sans effort</span></h1>
+    <p class="subtitle">Soyez notifié par email dès que votre dossier change de statut — vérification toutes les heures, automatiquement.</p>
+  </header>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-icon">✉️</div>
+      <p>Votre email doit être <strong>pré-autorisé</strong> par l'administrateur</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-icon">🔐</div>
+      <p>Identifiants ANEF <strong>vérifiés en temps réel</strong></p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-icon">📬</div>
+      <p>Email instantané dès qu'un <strong>changement est détecté</strong></p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('register', this)">✦ Nouvelle inscription</button>
+    <button class="tab-btn"        onclick="switchTab('update', this)">🔑 Changer de mot de passe</button>
+  </div>
+
+  <!-- ── Panel Register ── -->
+  <div id="panel-register" class="tab-panel active">
+    <div class="card">
+      <div class="card-title">Inscrire mon dossier</div>
+      <div class="card-desc">Vérification des identifiants + activation de la surveillance.</div>
+
+      <div class="form-grid">
+        <div class="sec-note">
+          <div class="ico">🔒</div>
+          <p>
+            <strong>Accès restreint :</strong> seuls les emails pré-autorisés peuvent s'inscrire.
+            Vos identifiants sont <strong>chiffrés RSA dans votre navigateur</strong> avant tout envoi.
+          </p>
+        </div>
+
+        <div class="field">
+          <label>Identifiant ANEF <span class="req">*</span></label>
+          <input type="text" id="reg-user" placeholder="votre-identifiant" autocomplete="username" />
+        </div>
+
+        <div class="field">
+          <label>Mot de passe ANEF <span class="req">*</span></label>
+          <input type="password" id="reg-pass" placeholder="••••••••" autocomplete="current-password" />
+          <div class="hint">Même mot de passe que sur administration-etrangers-en-france.interieur.gouv.fr</div>
+        </div>
+
+        <div class="field">
+          <label>Adresse email de notification <span class="req">*</span></label>
+          <input type="email" id="reg-email" placeholder="vous@exemple.fr" autocomplete="email" />
+          <div class="hint">Doit être pré-autorisée — vous recevrez les alertes ici</div>
+        </div>
+
+        <div id="reg-status" class="status"></div>
+
+        <button class="btn" id="reg-btn" onclick="handleRegister()">Activer la surveillance →</button>
+
+        <div class="disclaimer">
+          ⚠️ En soumettant ce formulaire vous autorisez ce service à se connecter à votre compte ANEF uniquement pour lire l'état de votre dossier. Aucune modification ne sera effectuée. Vous pouvez vous désinscrire à tout moment.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Panel Update ── -->
+  <div id="panel-update" class="tab-panel">
+    <div class="card update-card">
+      <div class="card-title">Changer de mot de passe</div>
+      <div class="card-desc">Mettez à jour votre mot de passe ANEF enregistré. L'ancien mot de passe sera vérifié.</div>
+
+      <div class="form-grid">
+        <div class="sec-note amber">
+          <div class="ico">⚠️</div>
+          <p>
+            Utilisez cette section <strong>uniquement si vous avez changé votre mot de passe sur le site ANEF</strong>.
+            L'ancien mot de passe sera vérifié avant toute modification.
+          </p>
+        </div>
+
+        <div class="field">
+          <label>Adresse email inscrite <span class="req">*</span></label>
+          <input type="email" id="upd-email" placeholder="vous@exemple.fr" autocomplete="email" />
+        </div>
+
+        <div class="divider">Ancien mot de passe</div>
+
+        <div class="field">
+          <label>Ancien mot de passe ANEF <span class="req">*</span></label>
+          <input type="password" id="upd-old" placeholder="••••••••" autocomplete="current-password"
+                 oninput="checkMatch()" />
+        </div>
+
+        <div class="divider">Nouveau mot de passe</div>
+
+        <div class="field">
+          <label>Nouveau mot de passe ANEF <span class="req">*</span></label>
+          <input type="password" id="upd-new" placeholder="••••••••" autocomplete="new-password"
+                 oninput="onStrength(); checkMatch()" />
+          <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+          <div class="strength-label" id="strength-label"></div>
+        </div>
+
+        <div class="field">
+          <label>Confirmer le nouveau mot de passe <span class="req">*</span></label>
+          <input type="password" id="upd-confirm" placeholder="••••••••" autocomplete="new-password"
+                 oninput="checkMatch()" />
+          <div class="hint" id="match-hint"></div>
+        </div>
+
+        <div id="upd-status" class="status"></div>
+
+        <button class="btn amber" id="upd-btn" onclick="handleUpdate()">Mettre à jour le mot de passe →</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Service communautaire indépendant — non affilié au gouvernement français</p>
+    <p>Code source sur <a href="https://github.com/YOUR_GITHUB_USERNAME/anef-tracker" target="_blank">GitHub</a></p>
+  </footer>
+</div>
+
+<script>
+  // ── CONFIG — update after forking ────────────────────────────────────────────
+  const REPO_OWNER = 'YOUR_GITHUB_USERNAME';
+  const REPO_NAME  = 'anef-tracker';
+  
+  // Create a Google Apps Script as a bridge to hide your GitHub Token.
+  // Deploy it as a Web App (Access: Anyone) and paste the URL here.
+  const GAS_BRIDGE_URL = 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+
+  // Generate with: python generate_key.py --rsa
+  // Private key → GitHub Secret RSA_PRIVATE_KEY (never committed)
+  const RSA_PUBLIC_KEY_PEM = `
+-----BEGIN PUBLIC KEY-----
+PASTE_YOUR_RSA_PUBLIC_KEY_HERE
+-----END PUBLIC KEY-----
+`.trim();
+
+  // ── Tab switching ─────────────────────────────────────────────────────────────
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── RSA-OAEP encryption (Web Crypto — no library needed) ─────────────────────
+  async function importPublicKey(pem) {
+    const body = pem.replace(/-----[^-]+-----/g, '').replace(/\s/g, '');
+    const der  = Uint8Array.from(atob(body), c => c.charCodeAt(0));
+    return crypto.subtle.importKey('spki', der.buffer,
+      { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['encrypt']);
+  }
+
+  async function encrypt(data) {
+    const key = await importPublicKey(RSA_PUBLIC_KEY_PEM);
+    const buf = new TextEncoder().encode(JSON.stringify(data));
+    const enc = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, key, buf);
+    return btoa(String.fromCharCode(...new Uint8Array(enc)));
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────────
+  function showStatus(id, type, html) {
+    const el = document.getElementById(id);
+    el.className = 'status ' + type;
+    el.innerHTML = html;
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function keyOk() {
+    return !RSA_PUBLIC_KEY_PEM.includes('PASTE_YOUR_RSA_PUBLIC_KEY_HERE');
+  }
+  
+  function bridgeOk() {
+    return !GAS_BRIDGE_URL.includes('PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE');
+  }
+
+  async function callBridge(data) {
+    if (!bridgeOk()) throw new Error('Google Apps Script Bridge non configuré. Contactez l’administrateur.');
+    
+    // We send the JSON to GAS.
+    const resp = await fetch(GAS_BRIDGE_URL, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'text/plain' }
+    });
+    return resp;
+  }
+
+  function setLoading(btnId, loading, defaultText) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = loading;
+    btn.innerHTML = loading
+      ? `<span class="spinner"></span>Envoi en cours…`
+      : defaultText;
+  }
+
+  // ── Password strength ─────────────────────────────────────────────────────────
+  function onStrength() {
+    const pw = document.getElementById('upd-new').value;
+    let s = 0;
+    if (pw.length >= 8)  s++;
+    if (pw.length >= 12) s++;
+    if (/[A-Z]/.test(pw)) s++;
+    if (/[0-9]/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw)) s++;
+    const colors = ['#ef4444','#f97316','#f59e0b','#84cc16','#10b981'];
+    const labels = ['Très faible','Faible','Moyen','Fort','Très fort'];
+    const fill  = document.getElementById('strength-fill');
+    const label = document.getElementById('strength-label');
+    fill.style.width      = pw ? (s / 5 * 100) + '%' : '0%';
+    fill.style.background = pw ? colors[Math.max(0, s - 1)] : 'transparent';
+    label.textContent     = pw ? labels[Math.max(0, s - 1)] : '';
+  }
+
+  function checkMatch() {
+    const oldP = document.getElementById('upd-old').value;
+    const newP = document.getElementById('upd-new').value;
+    const cnf  = document.getElementById('upd-confirm').value;
+    const hint = document.getElementById('match-hint');
+    if (!newP || !cnf) { hint.textContent = ''; return; }
+    if (newP === oldP) { hint.style.color = '#f59e0b'; hint.textContent = '⚠️ Doit être différent de l\'ancien'; return; }
+    if (newP !== cnf)  { hint.style.color = '#ef4444'; hint.textContent = '✗ Les mots de passe ne correspondent pas'; }
+    else               { hint.style.color = '#10b981'; hint.textContent = '✓ Les mots de passe correspondent'; }
+  }
+
+  // ── Register ──────────────────────────────────────────────────────────────────
+  async function handleRegister() {
+    const userId = document.getElementById('reg-user').value.trim();
+    const pass   = document.getElementById('reg-pass').value;
+    const email  = document.getElementById('reg-email').value.trim();
+
+    if (!userId)              return showStatus('reg-status', 'error', '❌ Identifiant ANEF requis.');
+    if (!pass)                return showStatus('reg-status', 'error', '❌ Mot de passe requis.');
+    if (!email.includes('@')) return showStatus('reg-status', 'error', '❌ Adresse email invalide.');
+    if (!keyOk())             return showStatus('reg-status', 'error', '⚙️ Clé RSA non configurée.');
+    if (!bridgeOk())          return showStatus('reg-status', 'error', '⚙️ Bridge non configuré.');
+
+    setLoading('reg-btn', true);
+    showStatus('reg-status', 'info', '⏳ Chiffrement et envoi…');
+
+    try {
+      const ciphertext = await encrypt({ type: 'registration', u: userId, p: pass, e: email, t: new Date().toISOString() });
+      
+      await callBridge({ type: 'registration', email: email, ciphertext: ciphertext });
+
+      showStatus('reg-status', 'success',
+        `<strong>🚀 Inscription envoyée !</strong><br><br>
+        Le serveur vérifie vos identifiants ANEF en arrière-plan.<br>
+        <strong>Vous recevrez un email de confirmation dans 1–2 minutes.</strong>`);
+
+      ['reg-user','reg-pass','reg-email'].forEach(id => document.getElementById(id).value = '');
+    } catch (e) {
+      showStatus('reg-status', 'error', `❌ <strong>Erreur :</strong> ${e.message}`);
+    }
+
+    setLoading('reg-btn', false, 'Activer la surveillance →');
+  }
+
+  // ── Update password ───────────────────────────────────────────────────────────
+  async function handleUpdate() {
+    const email = document.getElementById('upd-email').value.trim();
+    const oldP  = document.getElementById('upd-old').value;
+    const newP  = document.getElementById('upd-new').value;
+    const cnfP  = document.getElementById('upd-confirm').value;
+
+    if (!email.includes('@'))  return showStatus('upd-status', 'error', '❌ Adresse email invalide.');
+    if (!oldP)                 return showStatus('upd-status', 'error', '❌ Ancien mot de passe requis.');
+    if (!newP)                 return showStatus('upd-status', 'error', '❌ Nouveau mot de passe requis.');
+    if (newP !== cnfP)         return showStatus('upd-status', 'error', '❌ Les mots de passe ne correspondent pas.');
+    if (newP === oldP)         return showStatus('upd-status', 'error', '❌ Le nouveau mot de passe doit être différent.');
+    if (!keyOk())              return showStatus('upd-status', 'error', '⚙️ Clé RSA non configurée.');
+    if (!bridgeOk())           return showStatus('upd-status', 'error', '⚙️ Bridge non configuré.');
+
+    setLoading('upd-btn', true);
+    showStatus('upd-status', 'info', '⏳ Chiffrement et envoi…');
+
+    try {
+      const ciphertext = await encrypt({ type: 'password-update', e: email, op: oldP, np: newP, t: new Date().toISOString() });
+      
+      await callBridge({ type: 'password-update', email: email, ciphertext: ciphertext });
+
+      showStatus('upd-status', 'success',
+        `<strong>🚀 Demande de mise à jour envoyée !</strong><br><br>
+        Le serveur vérifie votre ancien mot de passe en arrière-plan.<br>
+        <strong>Vous recevrez un email de confirmation dans 1–2 minutes.</strong>`);
+
+      ['upd-email','upd-old','upd-new','upd-confirm'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('strength-fill').style.width = '0%';
+      document.getElementById('strength-label').textContent = '';
+      document.getElementById('match-hint').textContent = '';
+    } catch (e) {
+      showStatus('upd-status', 'error', `❌ <strong>Erreur :</strong> ${e.message}`);
+    }
+
+    setLoading('upd-btn', false, 'Mettre à jour le mot de passe →');
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const active = document.querySelector('.tab-panel.active').id;
+    if (active === 'panel-register') handleRegister();
+    else handleUpdate();
+  });
+</script>
+</body>
+</html>

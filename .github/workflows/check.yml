@@ -1,0 +1,59 @@
+name: ANEF Scheduled Check
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # every hour
+  workflow_dispatch:
+
+concurrency:
+  group: users-json
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Chrome
+        run: |
+          if ! command -v google-chrome >/dev/null; then
+            wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+            echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+            sudo apt-get update
+            sudo apt-get install -y google-chrome-stable
+          else
+            google-chrome --version
+          fi
+
+      - name: Install Python deps
+        run: pip install --no-cache-dir selenium webdriver-manager cryptography
+
+      - name: Run ANEF check
+        env:
+          RSA_PRIVATE_KEY: ${{ secrets.RSA_PRIVATE_KEY }}
+          STORAGE_KEY: ${{ secrets.STORAGE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          USERS_PATH: users.json
+        run: python check_users.py
+
+      - name: Commit users.json if changed
+        run: |
+          if git status --porcelain | grep -q "users.json"; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add users.json
+            git commit -m "Update users.json"
+            git push
+          else
+            echo "No changes to commit."
+          fi
